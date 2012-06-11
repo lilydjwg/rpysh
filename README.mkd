@@ -1,0 +1,14 @@
+`rpysh` is a Remote Python shell, for Linux Pythoners coping with Windows.
+
+If we have to cope with some Windows things, it's not so comfortable to have:
+* Emacs/Vi style key binding
+* Tab completion
+* Select & paste among X Window clients
+* Comfortable and highly configurable window managers
+* ....
+
+So `rpysh` comes to rescue!
+
+Come over [here][blogentry] if you can read Chinese. 中文介绍请点击[这里][blogentry]。
+
+[blogentry]: http://lilydjwg.is-programmer.com/2012/6/12/rpysh-get-readline-support-for-windows-python-shell.34165.html
