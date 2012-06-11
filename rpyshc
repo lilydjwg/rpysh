@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+# vim:fileencoding=utf-8
+
+import sys
+import os
+import socket
+import readline
+import pickle
+import socket
+import threading
+import time
+from functools import partial
+
+from rpylib import *
+
+histfile = os.path.expanduser('~/.rpyshc_history')
+
+def remoteComplete(sock, *args):
+  s = pickle.dumps(args)
+  sendSizedStr(sock, s)
+  ret = getSizedStr(sock)
+  return pickle.loads(ret)
+
+class Output(threading.Thread):
+  daemon = True
+  def __init__(self, sock):
+    self.sock = sock
+    super().__init__()
+
+  def run(self):
+    sock = self.sock
+    while True:
+      data = sock.recv(4096)
+      sys.stdout.buffer.write(data)
+      sys.stdout.buffer.flush()
+
+def main(host, port):
+  sock = socket.socket()
+  sock.connect((host, port))
+  sock2 = socket.socket()
+  sock2.connect((host, port+1))
+  readline.set_completer(partial(remoteComplete, sock2))
+  readline.parse_and_bind("tab: complete")
+
+  if os.path.exists(histfile):
+    # avoid duplicate reading
+    readline.clear_history()
+    readline.set_history_length(10000)
+    readline.read_history_file(histfile)
+
+  Output(sock).start()
+  while True:
+    try:
+      # avoid output EOL being too late
+      time.sleep(0.01)
+      prompt = getSizedStr(sock2)
+      cmd = input(prompt.decode())
+      if cmd:
+        sock.send(IN_DATA + cmd.encode())
+      else:
+        sock.send(IN_BLANKLINE)
+    except EOFError:
+      print()
+      sock2.close()
+      sock.close()
+      break
+    except KeyboardInterrupt:
+      sock.send(IN_INT)
+
+  readline.write_history_file(histfile)
+
+if __name__ == '__main__':
+  host = sys.argv[1]
+  port = int(sys.argv[2])
+  main(host, port)
