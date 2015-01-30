@@ -25,6 +25,8 @@ def remoteInput(sock, sock2, prompt=''):
     return sock.recv(1024).decode()
   elif t == IN_BLANKLINE:
     return ''
+  else:
+    raise EOFError
 
 class Completer(threading.Thread):
   def __init__(self, sock, local):
@@ -64,18 +66,20 @@ def interact(host, port, banner=None, local=None):
     print(a, 'connected.')
     s2, a = sock2.accept()
 
-    sys.stdout = sys.stderr = WritableSockIO(s)
+    try:
+      sys.stdout = sys.stderr = WritableSockIO(s)
 
-    console = code.InteractiveConsole(local)
-    console.raw_input = partial(remoteInput, s, s2)
-    Completer(s2, console.locals).start()
-    print('all setup.', file=sys.__stdout__)
-    console.interact(banner)
+      console = code.InteractiveConsole(local)
+      console.raw_input = partial(remoteInput, s, s2)
+      Completer(s2, console.locals).start()
+      print('all setup.', file=sys.__stdout__)
+      console.interact(banner)
 
-    s.close()
-    s2.close()
-    sys.stdout = sys.__stdout__
-    sys.stderr = sys.__stderr__
+      s.close()
+      s2.close()
+    finally:
+      sys.stdout = sys.__stdout__
+      sys.stderr = sys.__stderr__
 
 def usage():
     sys.exit('usage:  %s [port]\n\tport is %d by default' % (os.path.split(sys.argv[0])[1], default_port))
