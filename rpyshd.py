@@ -53,6 +53,9 @@ class WritableSockIO:
   def write(self, data):
     self.sock.send(data.encode())
 
+  def flush(self):
+    pass
+
 def interact(host, port, banner=None, local=None):
   sock = socket.socket()
   sock.bind((host, port))
